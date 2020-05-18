@@ -1,25 +1,23 @@
 from datetime import datetime, timedelta, timezone
 import requests
 from pathvalidate import sanitize_filename
-from requests.exceptions import Timeout
 import os
-import sys
 import time
 import logging
 
+# noinspection PyPackageRequirements
 import ffmpeg
 import m3u8
 
-from gcloud.storage import upload_blob
 from radiko.authorization import Authorization
 
 JST = timezone(timedelta(hours=+9), 'JST')
 
+
 class RadikoRecorder(object):
     """Radikoの録音クラス"""
-
     _MASTER_PLAYLIST_BASE_URL = 'https://rpaa.smartstream.ne.jp/so/playlist.m3u8'
-    _DUMMY_LSID = '11111111111111111111111111111111111111' # Radiko APIの仕様で38桁の文字列が必要。
+    _DUMMY_LSID = '11111111111111111111111111111111111111'  # Radiko APIの仕様で38桁の文字列が必要。
 
     def __init__(self, station, record_time, outfile):
         self._headers = self._make_headers()
@@ -27,16 +25,21 @@ class RadikoRecorder(object):
         self._record_time = record_time
         self._file = outfile
 
-    def _make_headers(self):
+    @staticmethod
+    def _make_headers():
         """HTTPリクエストのヘッダーを作成する"""
         headers = Authorization().get_auththenticated_headers()
-        headers['Connection']='keep-alive'
+        headers['Connection'] = 'keep-alive'
         logging.debug(f'headers: {headers}')
         return headers
 
     def _make_master_playlist_url(self):
         """master playlistのURLを作成する"""
-        url = f'{RadikoRecorder._MASTER_PLAYLIST_BASE_URL}?station_id={self._station}&l=15&lsid={RadikoRecorder._DUMMY_LSID}&type=b'
+        url = (f'{RadikoRecorder._MASTER_PLAYLIST_BASE_URL}?'
+               f'station_id={self._station}&'
+               f'l=15&'
+               f'lsid={RadikoRecorder._DUMMY_LSID}&'
+               f'type=b')
         logging.debug(f'playlist url:{url}')
         return url
 
@@ -45,8 +48,8 @@ class RadikoRecorder(object):
 
         requests用のhttpヘッダーをもとにffmpeg用に文字列のHTTPリクエストヘッダーを作る。
         """
-        header_list = [f'{k}: {v}'for k, v in self._headers.items()]
-        audio_headers = '\r\n'.join(header_list)+'\r\n'
+        header_list = [f'{k}: {v}' for k, v in self._headers.items()]
+        audio_headers = '\r\n'.join(header_list) + '\r\n'
         logging.debug(f'audio headers: {audio_headers}')
         return audio_headers
 
@@ -67,7 +70,8 @@ class RadikoRecorder(object):
     def _get_media_url(self, media_playlist_url):
         """音声ファイルのURLをmedia playlistから取得する"""
         query_time = int(datetime.now(tz=JST).timestamp() * 100)
-        r = Requester.request_media_playlist_url(f'{media_playlist_url}&_={query_time}', self._headers)
+        r = Requester.request_media_playlist_url(
+            f'{media_playlist_url}&_={query_time}', self._headers)
         logging.debug(f'aac url:{media_playlist_url}&_={query_time}')
         if r.status_code != 200:
             return None
@@ -80,9 +84,9 @@ class RadikoRecorder(object):
         media_playlist_url = self._get_media_playlist_url()
         end = datetime.now() + timedelta(minutes=self._record_time)
         recorded = set()
-        while(datetime.now() <= end):
+        while datetime.now() <= end:
             url_list = self._get_media_url(media_playlist_url)
-            if url_list == None:
+            if url_list is None:
                 # 時間をおいてリトライすると取れるときがあるため待つ
                 time.sleep(3.0)
                 continue
@@ -94,8 +98,8 @@ class RadikoRecorder(object):
                 if not os.path.isdir('./tmp'):
                     os.mkdir('./tmp')
                 try:
-                    stream = ffmpeg\
-                        .input(filename=url, f='aac', headers=headers)\
+                    stream = ffmpeg \
+                        .input(filename=url, f='aac', headers=headers) \
                         .output(filename=f'./tmp/{sanitize_filename(f"{dt}", platform="auto")}.aac')
                     ffmpeg.run(stream, capture_stdout=True)
                 except Exception as e:
@@ -106,17 +110,20 @@ class RadikoRecorder(object):
         logging.debug('record end')
         return recorded
 
-def record(station, program, rtime, outfilename):
+
+def record(station, rtime, outfilename):
     # 録音を実施する
     recorder = RadikoRecorder(station, rtime, outfilename)
     recorded = recorder.record()
     # mp3ファイルを一つに
-    l = sorted(recorded)
-    files = [f'./tmp/{sanitize_filename(f"{e}", platform="auto")}.aac' for e in l]
+    files = [
+        f'./tmp/{sanitize_filename(f"{e}", platform="auto")}.aac'
+        for e in sorted(recorded)
+    ]
     try:
         streams = [ffmpeg.input(filename=f) for f in files]
-        stream = ffmpeg\
-            .concat(*streams,a=1,v=0)\
+        stream = ffmpeg \
+            .concat(*streams, a=1, v=0) \
             .output(filename=outfilename, absf='aac_adtstoasc')
         ffmpeg.run(stream, capture_stdout=True)
     except Exception as e:

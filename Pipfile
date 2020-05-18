@@ -34,5 +34,5 @@ pathvalidate = "*"
 python_version = "3.7"
 
 [scripts]
-format = "yapf -i --recursive src/radikotests/"
-check_format = "yapf --diff --recursive src/radikotests/"
+format = "yapf -i --recursive src/radikotests/ src/radiko/recorder.py"
+check_format = "yapf --diff --recursive src/radikotests/ src/radiko/recorder.py"

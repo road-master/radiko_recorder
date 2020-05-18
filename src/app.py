@@ -39,6 +39,6 @@ if __name__ == "__main__":
     outfilename = f'./tmp/{current_time}_{station}_{program}.aac'
     logging.debug(f'outfilename:{outfilename}')
     # 録音してアップロード
-    record(station, program, rtime, outfilename)
+    record(station, rtime, outfilename)
     if uploads:
         upload_blob('radiko-recorder', outfilename, f'{current_time}_{station}_{program}.aac')
