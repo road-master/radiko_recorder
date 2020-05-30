@@ -46,7 +46,7 @@ def get_area_id():
 
 def record_stream(stream, rtime):
     # Launch video recording
-    popen = stream.run_async(pipe_stdin=True)
+    popen = ffmpeg.run_async(stream, pipe_stdin=True)
     time.sleep(rtime * 60)
     # Stop video recording
     popen.communicate(str.encode("q"))  # Equivalent to send a Q
