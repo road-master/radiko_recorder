@@ -31,7 +31,7 @@ async def record(req, resp):
         outfilename = f'./tmp/{current_time}_{station}_{program}.aac'
         logging.debug(f'outfilename:{outfilename}')
         # 録音してアップロード
-        recorder.record(station, program, rtime, outfilename)
+        recorder.record(station, rtime, outfilename)
         storage.upload_blob('radiko-recorder', outfilename, f'{current_time}_{station}_{program}.aac')
 
 
