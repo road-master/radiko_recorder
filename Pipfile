@@ -20,19 +20,17 @@ callee = "*"
 ffmpeg-python = "==0.2.0"
 # To archive audio into Google Cloud Storage
 google-cloud-storage = "==1.23.0"
-# To parse m3u8 from radiko
-m3u8 = "==0.5.2"
-# To request to radiko
-requests = "==2.22.0"
 # To run Web API to record radiko
 responder = "==2.0.4"
 # To support Windows since Windows can't use ":" for file name
 pathvalidate = "*"
+# To intaract with radiko API to get media playlist
+radikoplaylist = "*"
 
 [requires]
 # Since google-cloud-storage doesnt support python 3.8 in Windows at 2020-05-18
 python_version = "3.7"
 
 [scripts]
-format = "yapf -i --recursive src/radikotests/ src/radiko/recorder.py"
-check_format = "yapf --diff --recursive src/radikotests/ src/radiko/recorder.py"
+format = "yapf -i --recursive src/time_free_app.py src/radiko/"
+check_format = "yapf --diff --recursive src/time_free_app.py src/radiko/"

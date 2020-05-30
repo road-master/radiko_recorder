@@ -1,4 +1,5 @@
 import argparse
+import os
 from datetime import datetime, timedelta, timezone
 import logging
 
@@ -14,7 +15,7 @@ def _get_args():
      type=str,
      help='radiko program name')
     parser.add_argument('recordtime',
-     type=int,
+     type=float,
      help='recording time.(unit:miniutes)')
     parser.add_argument('-u', '--uploadgcloud',
      type=bool,
@@ -24,7 +25,9 @@ def _get_args():
 
 if __name__ == "__main__":
     # ログ設定をする
-    logging.basicConfig(filename=f'/var/log/record_radiko.log', level=logging.DEBUG)
+    logging.basicConfig(filename=os.getenv('RADIKO_RECORDER_LOG_FILE',
+                                           f'/var/log/record_radiko.log'),
+                        level=logging.DEBUG)
     # 実行時パラメータを取得する
     station, program, rtime, uploads = _get_args()
 

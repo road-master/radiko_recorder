@@ -1,12 +1,11 @@
-import logging
 import time
 from dataclasses import dataclass
-from glob import glob
 from pathlib import Path
 
 import pytest
 from callee import Regex
 from pathvalidate import sanitize_filename
+from radikoplaylist.master_playlist import MasterPlaylist
 
 import webapp
 
@@ -33,9 +32,24 @@ class TestWebApp:
         # AttributeError: 'generator' object has no attribute 'status_code'
         mock_ffmpeg_run = mocker.patch('ffmpeg.run')
         mock_ffmpeg_run.side_effect = AacFileCreator().create
-        mock_request = mocker.patch(
-            'radiko.recorder.Requester.request_media_playlist_url')
-        mock_request.side_effect = ResponseIterator().response
+        mocker.patch(
+            'radikoplaylist.MasterPlaylistClient.get',
+            return_value=MasterPlaylist(
+                "https://rpaa.smartstream.ne.jp/medialist?session=Q3fHC9Smzp8x49j9AqicBL",
+                {
+                    'User-Agent': 'python3.7',
+                    'Accept': '*/*',
+                    'X-Radiko-App': 'pc_html5',
+                    'X-Radiko-App-Version': '0.0.1',
+                    'X-Radiko-User': 'dummy_user',
+                    'X-Radiko-Device': 'pc',
+                    'X-Radiko-AuthToken': 'bPtaETzKFkrriQ_YOKkBSw',
+                    'X-Radiko-Partialkey': b'ZDY2YzMyMjA5ZGE5Y2EwYQ==',
+                    'X-Radiko-AreaId': "JP13",
+                    'Connection': 'keep-alive',
+                },
+            )
+        )
         mock_upload = mocker.patch('gcloud.storage.upload_blob')
         response = api.requests.get("/record",
                                     params={
@@ -59,44 +73,11 @@ class Response:
     content: bytes
 
 
-class ResponseIterator:
-    def __init__(self):
-        self.first_time = True
-
-    def response(self, url, headers):
-        if self.first_time:
-            self.first_time = False
-            return Response(200, (
-                "#EXTM3U\n"
-                "#EXT-X-VERSION:6\n"
-                "#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=52973,CODECS=\"mp4a.40.5\"\n"
-                "https://rpaa.smartstream.ne.jp/medialist?session=Q3fHC9Smzp8x49j9AqicBL"
-            ).encode('utf-8'))
-        else:
-            return Response(200, (
-                "#EXTM3U\n"
-                "#EXT-X-VERSION:6\n"
-                "#EXT-X-TARGETDURATION:5\n"
-                "#EXT-X-ALLOW-CACHE:NO\n"
-                "#EXT-X-MEDIA-SEQUENCE:3267061\n"
-                "#EXT-X-DISCONTINUITY-SEQUENCE:0\n"
-                "#EXT-X-PROGRAM-DATE-TIME:2020-05-18T03:06:20.000+09:00\n"
-                "#EXTINF:4.992,\n"
-                "https://rpaa.smartstream.ne.jp/segments/o/B/o/o/XLZqVBVWByx5ZsGnXTB4.aac\n"
-                "#EXT-X-PROGRAM-DATE-TIME:2020-05-18T03:06:25.000+09:00\n"
-                "#EXTINF:4.992,\n"
-                "https://rpaa.smartstream.ne.jp/segments/o/B/4/5/MtbTGXTG2MgWmnQZbgjC.aac\n"
-                "#EXT-X-PROGRAM-DATE-TIME:2020-05-18T03:06:30.000+09:00\n"
-                "#EXTINF:5.035,\n"
-                "https://rpaa.smartstream.ne.jp/segments/o/B/4/g/yaFCNTRefmTkmDoJD3kf.aac"
-            ).encode('utf-8'))
-
-
 class AacFileCreator:
     def __init__(self):
         self.time = 0
 
-    def create(self, stream, capture_stdout):
+    def create(self, _stream, _capture_stdout):
         if self.time == 0:
             self.time = 1
             Path(f'./tmp/{sanitize_filename("2020-05-18 03:06:20+09:00", platform="auto")}.aac').write_bytes(b'')
