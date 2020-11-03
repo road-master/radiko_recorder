@@ -16,6 +16,7 @@ def _get_args():
     parser.add_argument('timeout',
                         type=float,
                         default=None,
+                        nargs='?',
                         help='limit time of recording.(unit:miniutes)')
     parser.add_argument('-u',
                         '--uploadgcloud',
